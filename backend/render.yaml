@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: rockship-backend
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: APP_NAME
+        value: Rockship Backend
+      - key: APP_VERSION
+        value: 1.0.0
+      - key: DEBUG
+        value: False
+      - key: API_V1_PREFIX
+        value: /api/v1
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-3-5-sonnet-20241022
+      - key: CORS_ORIGINS
+        value: '["https://your-frontend-url.vercel.app"]'
+      - key: MAX_FILE_SIZE
+        value: 10485760
