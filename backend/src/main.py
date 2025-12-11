@@ -56,6 +56,20 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/config-check")
+async def config_check():
+    """Check critical configuration (for debugging deployment)"""
+    import os
+    return {
+        "app_name": settings.APP_NAME,
+        "claude_model": settings.CLAUDE_MODEL,
+        "anthropic_key_exists": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "anthropic_key_length": len(os.getenv("ANTHROPIC_API_KEY", "")),
+        "supabase_url_exists": bool(settings.SUPABASE_URL),
+        "debug_mode": settings.DEBUG
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

@@ -109,7 +109,20 @@ async def generate_tasks_with_ai(
             tasks=tasks,
             message=f"Successfully generated {len(tasks)} tasks using AI"
         )
+    except ValueError as e:
+        # JSON parsing errors from service
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI response parsing error: {str(e)}"
+        )
     except Exception as e:
+        # Check if it's an Anthropic API error
+        error_msg = str(e)
+        if "not_found_error" in error_msg or "model" in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"AI Model Error: {error_msg}. Please check ANTHROPIC_API_KEY and CLAUDE_MODEL configuration."
+            )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate tasks: {str(e)}"
