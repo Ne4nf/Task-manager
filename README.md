@@ -1,15 +1,26 @@
-# Rockship - AI-Powered Project Management System
+# Rockship - AI-Powered Project Management with Memory System
 
-Modern project management system with AI-powered module and task generation using Claude 3.5 Sonnet.
+Modern project management system with AI-powered module and task generation using Claude 3.5 Sonnet, featuring intelligent memory-based reuse capabilities.
 
-## Features
+## ✨ Key Features
 
-- 🚀 **Project Management** - Create and manage projects with modules and tasks
-- 🤖 **AI Generation** - Auto-generate modules and tasks using Claude AI
-- 📄 **Document Upload** - Upload and manage project documentation (.md, .docx, .pdf)
-- 📊 **Progress Tracking** - Real-time progress calculation with auto-updating metrics
-- 👥 **User Management** - Simple authentication and user assignment
-- 🎨 **Modern UI** - Clean white/blue interface built with React and Tailwind CSS
+### 🧠 **GenAI with Memories** (NEW!)
+- **Semantic Search** - Find similar modules using 3-layer tag classification (L1: Intent, L2: Tech, L3: Domain)
+- **Smart Reuse** - Automatically reuse proven modules with 3 strategies:
+  - **Direct Reuse** (≥75% similarity) - Copy + customize
+  - **Partial Reuse** (50-75%) - Adapt patterns from multiple sources
+  - **New Generation** (<50%) - Generate from scratch
+- **Self-Learning** - Auto-tag generated modules to build memory bank
+- **10x Faster** - Reuse proven designs instead of generating from scratch
+
+### 🚀 **Core Features**
+- **Project Management** - Create and manage projects with modules and tasks
+- **AI Generation** - Auto-generate modules and tasks using Claude AI
+- **Document Upload** - Upload and manage project documentation (.md, .docx, .pdf)
+- **Git Analysis** - Analyze GitHub repos and generate modules from codebase
+- **Progress Tracking** - Real-time progress calculation with auto-updating metrics
+- **User Management** - Authentication with JWT and session management
+- **Modern UI** - Clean interface with reused badges and source module links
 
 ## Tech Stack
 

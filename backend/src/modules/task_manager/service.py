@@ -104,11 +104,12 @@ class TaskService:
         # Create prompt
         prompt = create_task_generation_prompt(module_data)
         
-        # Call Claude API
+        # Call Claude API with maximum output tokens
+        # Lower temperature (0.3) to enforce strict JSON formatting compliance
         message = self.claude.messages.create(
             model=settings.CLAUDE_MODEL,
-            max_tokens=4000,
-            temperature=0.7,
+            max_tokens=8192,  # Maximum for Claude Sonnet 3.5
+            temperature=0.3,  # Low temp for strict rule-following
             messages=[
                 {
                     "role": "user",
@@ -120,13 +121,83 @@ class TaskService:
         # Parse response
         response_text = message.content[0].text
         
+        # Debug: Print the raw response
+        print("=" * 80)
+        print("Claude AI Task Generation Response:")
+        print(f"Response length: {len(response_text)} chars")
+        print(response_text[:1000])  # First 1000 chars
+        print("=" * 80)
+        
         # Extract JSON from response (handle markdown code blocks)
+        original_text = response_text
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0].strip()
+            print("✓ Extracted JSON from ```json block")
         elif "```" in response_text:
             response_text = response_text.split("```")[1].split("```")[0].strip()
+            print("✓ Extracted JSON from ``` block")
         
-        tasks_data = json.loads(response_text)
+        # Clean up response text - fix common JSON formatting issues
+        response_text = response_text.strip()
+        
+        # CRITICAL FIX: Replace literal newlines in JSON strings with escaped \n
+        # This handles Claude's inconsistent newline escaping
+        # Strategy: Parse as lenient JSON-like text, fix strings, re-serialize
+        try:
+            # First attempt: Try parsing as-is (in case Claude got it right)
+            tasks_data = json.loads(response_text)
+            print(f"✅ Successfully parsed {len(tasks_data)} tasks from JSON (no fixes needed)")
+        except json.JSONDecodeError as initial_error:
+            print(f"⚠️ Initial parse failed: {initial_error}")
+            print("🔧 Attempting to fix literal newlines in JSON strings...")
+            
+            # Fix strategy: Use regex to find strings with literal newlines and escape them
+            # This is a heuristic but works for our structured format
+            import re
+            
+            # Pattern: "description": "..." with potential literal newlines inside
+            # Replace literal \n (newline char) with \\n (escaped string) in JSON string values
+            def escape_newlines_in_json_strings(text):
+                # Find all JSON string values (between quotes, not keys)
+                # This regex finds: "key": "value with\npotential\nnewlines"
+                def replace_in_match(match):
+                    original = match.group(0)
+                    # If this is a value (has : before it), escape newlines
+                    if ':' in text[max(0, match.start()-20):match.start()]:
+                        fixed = original.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+                        return fixed
+                    return original
+                
+                # Match quoted strings
+                pattern = r'"[^"]*"'
+                result = re.sub(pattern, replace_in_match, text, flags=re.DOTALL)
+                return result
+            
+            fixed_text = escape_newlines_in_json_strings(response_text)
+            
+            # Count how many newlines were fixed
+            original_literal = response_text.count('\n')
+            fixed_literal = fixed_text.count('\n')
+            print(f"   Fixed {original_literal - fixed_literal} literal newlines")
+            
+            # Try parsing the fixed version
+            try:
+                tasks_data = json.loads(fixed_text)
+                print(f"✅ Successfully parsed {len(tasks_data)} tasks after auto-fix")
+            except json.JSONDecodeError as e:
+                # Still failed - give up and show detailed error
+                print("❌ JSON Parse Error Details (even after auto-fix):")
+                print(f"   Error: {e}")
+                print(f"   Error position: line {e.lineno}, column {e.colno}")
+                print(f"   Error character: {e.pos}")
+                print("=" * 80)
+                print("Problematic JSON (first 3000 chars):")
+                print(fixed_text[:3000])
+                print("=" * 80)
+                print("Last 500 chars of JSON:")
+                print(fixed_text[-500:])
+                print("=" * 80)
+                raise ValueError(f"Invalid JSON response from AI at line {e.lineno}, col {e.colno}: {str(e)}")
         
         # Store tasks in database
         created_tasks = []

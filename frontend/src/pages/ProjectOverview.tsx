@@ -11,6 +11,7 @@ import type { ModuleFormData } from '../components/ModuleModal';
 import LoadingOverlay from '../components/LoadingOverlay';
 import SelectionModal from '../components/SelectionModal';
 import DocumentUpload from '../components/DocumentUpload';
+import GitAnalyzer from '../components/GitAnalyzer';
 import * as api from '../api/client';
 
 interface ProjectOverviewProps {
@@ -60,12 +61,38 @@ export default function ProjectOverview({ onLogout }: ProjectOverviewProps) {
     
     setIsGenerating(true);
     try {
-      const result = await api.generateModulesWithAI(projectId);
-      alert(`Success! Generated ${result.modules.length} modules with AI`);
+      const result = await api.generateModulesDirect(projectId);
+      alert(`Success! Generated ${result.modules.length} modules with direct AI analysis`);
       await loadProjectData(); // Reload to show new modules
     } catch (err: any) {
       console.error('Gen AI error:', err);
       alert(err.response?.data?.detail || 'Failed to generate modules');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenAIWithMemories = async () => {
+    if (!projectId) return;
+    
+    setIsGenerating(true);
+    try {
+      const result = await api.generateModulesWithMemories(projectId);
+      
+      // Show result with reuse info
+      let message = `Success! Generated ${result.modules.length} modules`;
+      if (result.reuse_summary) {
+        message += `\n\nReuse Summary:\n`;
+        message += `- Direct Reuse: ${result.reuse_summary.direct_reuse || 0}\n`;
+        message += `- Pattern Combination: ${result.reuse_summary.logic_reference || 0}\n`;
+        message += `- New Generation: ${result.reuse_summary.new_gen || 0}`;
+      }
+      
+      alert(message);
+      await loadProjectData(); // Reload to show new modules
+    } catch (err: any) {
+      console.error('Gen AI with memories error:', err);
+      alert(err.response?.data?.detail || 'Failed to generate modules with memories');
     } finally {
       setIsGenerating(false);
     }
@@ -287,14 +314,22 @@ export default function ProjectOverview({ onLogout }: ProjectOverviewProps) {
               {/* Actions */}
               <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Module Management</h3>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                   <button 
                     onClick={handleGenAIModules}
                     disabled={isGenerating}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold hover:from-purple-600 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                   >
                     <Sparkles className="w-4 h-4" />
-                    {isGenerating ? 'Generating...' : 'Gen AI Modules'}
+                    {isGenerating ? 'Generating...' : '🔧 Gen AI Modules'}
+                  </button>
+                  <button 
+                    onClick={handleGenAIWithMemories}
+                    disabled={isGenerating}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold hover:from-blue-600 hover:to-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {isGenerating ? 'Searching Memories...' : '📝 Gen AI with Memories'}
                   </button>
                   <button 
                     onClick={handleCreateModule}
@@ -358,12 +393,24 @@ export default function ProjectOverview({ onLogout }: ProjectOverviewProps) {
           )}
 
           {selectedTab === 'docs' && (
-            <div className="bg-white rounded-2xl p-8 shadow-md border border-gray-200">
-              <h3 className="text-xl font-bold text-gray-800 mb-6">Project Documentation</h3>
-              <DocumentUpload 
-                projectId={projectId!} 
-                onUploadComplete={loadProjectData}
-              />
+            <div className="space-y-6">
+              {/* Git Analyzer */}
+              <div className="bg-white rounded-2xl p-8 shadow-md border border-gray-200">
+                <h3 className="text-xl font-bold text-gray-800 mb-6">AI Repository Analysis</h3>
+                <GitAnalyzer 
+                  projectId={projectId!} 
+                  onAnalyzeComplete={loadProjectData}
+                />
+              </div>
+
+              {/* Document Upload */}
+              <div className="bg-white rounded-2xl p-8 shadow-md border border-gray-200">
+                <h3 className="text-xl font-bold text-gray-800 mb-6">Manual Document Upload</h3>
+                <DocumentUpload 
+                  projectId={projectId!} 
+                  onUploadComplete={loadProjectData}
+                />
+              </div>
             </div>
           )}
         </div>

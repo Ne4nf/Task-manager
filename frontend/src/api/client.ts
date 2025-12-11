@@ -31,6 +31,23 @@ export interface User {
   created_at: string;
 }
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user_id: string;
+  email: string;
+}
+
+export const login = async (data: LoginRequest): Promise<LoginResponse> => {
+  const response = await api.post('/auth/login', data);
+  return response.data;
+};
+
 export const createUser = async (data: CreateUserRequest): Promise<User> => {
   const response = await api.post('/users/', data);
   return response.data;
@@ -80,6 +97,16 @@ export interface Module {
   completed_tasks: number;
   progress: number;
   generated_by_ai: boolean;
+  source_type?: string;
+  reused_from_module_id?: string;
+  reuse_strategy?: 'direct' | 'partial_reuse' | 'logic_reference';
+  generation_metadata?: {
+    model: string;
+    prompt_version: string;
+    phase_1_success: boolean;
+    phase_2_success: boolean;
+    regenerated?: boolean;
+  };
   created_at: string;
 }
 
@@ -97,8 +124,11 @@ export interface Task {
   quality_score: number;
   autonomy: number;
   due_date?: string;
+  started_at?: string;
+  completed_at?: string;
   generated_by_ai: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface DocumentUploadResponse {
@@ -163,13 +193,43 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
 };
 
 // Modules
-export const generateModulesWithAI = async (projectId: string, documentId?: string): Promise<{ modules: Module[], message: string }> => {
-  const response = await api.post('/modules/generate', {
+export const generateModulesDirect = async (
+  projectId: string, 
+  documentId?: string
+): Promise<{ modules: Module[], message: string }> => {
+  const response = await api.post('/modules/generate-direct', {
     project_id: projectId,
     document_id: documentId,
   });
   return response.data;
 };
+
+export const generateModulesWithMemories = async (
+  projectId: string, 
+  documentId?: string,
+  config_name: string = 'default',
+  top_k: number = 3
+): Promise<{ 
+  modules: Module[], 
+  message: string,
+  reuse_summary?: {
+    direct_reuse: number;
+    logic_reference: number;
+    new_gen: number;
+  },
+  reuse_suggestions?: any[]
+}> => {
+  const response = await api.post('/modules/generate-with-memories', {
+    project_id: projectId,
+    document_id: documentId,
+    config_name,
+    top_k
+  });
+  return response.data;
+};
+
+// Legacy alias for backward compatibility
+export const generateModulesWithAI = generateModulesDirect;
 
 export const createModule = async (data: {
   project_id: string;
@@ -210,6 +270,11 @@ export const updateModule = async (moduleId: string, data: Partial<{
 
 export const deleteModule = async (moduleId: string): Promise<void> => {
   await api.delete(`/modules/${moduleId}`);
+};
+
+export const regenerateModuleDetails = async (moduleId: string): Promise<Module> => {
+  const response = await api.post(`/modules/${moduleId}/regenerate-details`);
+  return response.data;
 };
 
 // Tasks

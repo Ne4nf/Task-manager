@@ -8,3 +8,6 @@ pydantic-settings==2.7.0
 python-dotenv==1.0.1
 aiofiles==24.1.0
 email-validator==2.1.0
+cryptography==43.0.3
+pgvector==0.3.6
+itsdangerous==2.2.0

@@ -35,6 +35,7 @@ export default function ModuleDetail({ onLogout }: ModuleDetailProps) {
   const [taskModalMode, setTaskModalMode] = useState<'create' | 'update'>('create');
   const [showSelectionModal, setShowSelectionModal] = useState(false);
   const [selectedTaskForUpdate, setSelectedTaskForUpdate] = useState<api.Task | null>(null);
+  const [isRegeneratingDetails, setIsRegeneratingDetails] = useState(false);
 
   useEffect(() => {
     loadModuleData();
@@ -74,6 +75,22 @@ export default function ModuleDetail({ onLogout }: ModuleDetailProps) {
       alert(err.response?.data?.detail || 'Failed to generate tasks');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleRegenerateDetails = async () => {
+    if (!moduleId) return;
+    
+    setIsRegeneratingDetails(true);
+    try {
+      await api.regenerateModuleDetails(moduleId);
+      alert('✅ Module details regenerated successfully!');
+      await loadModuleData(); // Reload to show updated details
+    } catch (err: any) {
+      console.error('Regenerate error:', err);
+      alert(err.response?.data?.detail || 'Failed to regenerate module details');
+    } finally {
+      setIsRegeneratingDetails(false);
     }
   };
 
@@ -218,8 +235,41 @@ export default function ModuleDetail({ onLogout }: ModuleDetailProps) {
 
           {/* Module Header */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 fade-in border border-gray-200">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">{module.name}</h1>
-            <p className="text-gray-600 text-lg mb-6">{module.description}</p>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold text-gray-800 mb-2">{module.name}</h1>
+                <div className="flex items-center gap-2">
+                  {module.generated_by_ai && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                      <Sparkles className="w-3 h-3" />
+                      AI Generated
+                    </span>
+                  )}
+                  {module.reused_from_module_id && (
+                    <>
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Reused ({module.reuse_strategy === 'direct' ? 'Direct' : module.reuse_strategy === 'partial_reuse' ? 'Partial' : 'Logic Ref'})
+                      </span>
+                      <button
+                        onClick={() => navigate(`/project/${projectId}/module/${module.reused_from_module_id}`)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                        title="View source module"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        View Source
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-gray-600 text-lg mb-6 leading-relaxed">{module.description}</p>
 
             {/* Progress */}
             <div className="mb-6">
@@ -260,9 +310,98 @@ export default function ModuleDetail({ onLogout }: ModuleDetailProps) {
             </div>
           </div>
 
+          {/* Module Details - Expandable Sections */}
+          {(module.scope || module.dependencies || module.features || module.requirements || module.technical_specs) && (
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Module Specifications</h3>
+              
+              <div className="space-y-4">
+                {module.scope && (
+                  <details className="group">
+                    <summary className="cursor-pointer list-none flex items-center justify-between p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+                      <span className="font-semibold text-gray-800">📋 Scope</span>
+                      <span className="text-gray-500 text-sm group-open:hidden">Click to expand</span>
+                    </summary>
+                    <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">{module.scope}</pre>
+                    </div>
+                  </details>
+                )}
+
+                {module.features && (
+                  <details className="group">
+                    <summary className="cursor-pointer list-none flex items-center justify-between p-4 bg-green-50 rounded-lg hover:bg-green-100 transition">
+                      <span className="font-semibold text-gray-800">✨ Features</span>
+                      <span className="text-gray-500 text-sm group-open:hidden">Click to expand</span>
+                    </summary>
+                    <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">{module.features}</pre>
+                    </div>
+                  </details>
+                )}
+
+                {module.dependencies && (
+                  <details className="group">
+                    <summary className="cursor-pointer list-none flex items-center justify-between p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition">
+                      <span className="font-semibold text-gray-800">🔗 Dependencies</span>
+                      <span className="text-gray-500 text-sm group-open:hidden">Click to expand</span>
+                    </summary>
+                    <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">{module.dependencies}</pre>
+                    </div>
+                  </details>
+                )}
+
+                {module.requirements && (
+                  <details className="group">
+                    <summary className="cursor-pointer list-none flex items-center justify-between p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
+                      <span className="font-semibold text-gray-800">📌 Requirements</span>
+                      <span className="text-gray-500 text-sm group-open:hidden">Click to expand</span>
+                    </summary>
+                    <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">{module.requirements}</pre>
+                    </div>
+                  </details>
+                )}
+
+                {module.technical_specs && (
+                  <details className="group">
+                    <summary className="cursor-pointer list-none flex items-center justify-between p-4 bg-red-50 rounded-lg hover:bg-red-100 transition">
+                      <span className="font-semibold text-gray-800">⚙️ Technical Specifications</span>
+                      <span className="text-gray-500 text-sm group-open:hidden">Click to expand</span>
+                    </summary>
+                    <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">{module.technical_specs}</pre>
+                    </div>
+                  </details>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-200">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Task Management</h3>
+            
+            {/* Warning if Phase 2 failed */}
+            {module.generation_metadata?.phase_2_success === false && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-yellow-800 font-medium">
+                    ⚠️ Module details are incomplete. Features, requirements, and technical specs failed to generate.
+                  </p>
+                  <button
+                    onClick={handleRegenerateDetails}
+                    disabled={isRegeneratingDetails}
+                    className="mt-2 px-3 py-1.5 rounded-lg bg-yellow-600 text-white text-sm font-medium hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRegeneratingDetails ? 'Regenerating...' : '🔄 Regenerate Details'}
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <div className="flex gap-3">
               <button 
                 onClick={handleGenAITasks}
@@ -291,73 +430,145 @@ export default function ModuleDetail({ onLogout }: ModuleDetailProps) {
 
           {/* Tasks List */}
           <div className="space-y-3">
+            {tasks.length === 0 && (
+              <div className="bg-white rounded-xl shadow-md p-12 text-center border border-gray-200">
+                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">No Tasks Yet</h3>
+                <p className="text-gray-600 mb-4">Create tasks to start working on this module</p>
+              </div>
+            )}
+            
             {tasks.map((task) => {
               return (
-                <div
+                <details
                   key={task.id}
-                  className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transform transition border border-gray-200 relative group"
+                  className="bg-white rounded-xl shadow-md hover:shadow-lg transform transition border border-gray-200 group"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 pr-4">
-                      <h4 className="text-gray-800 font-semibold mb-1">{task.name}</h4>
-                      <p className="text-gray-600 text-sm">{task.description}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {/* Status Dropdown */}
-                      <select
-                        value={task.status}
-                        onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value as api.Task['status'], e as any)}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`px-3 py-1 rounded-full text-xs border cursor-pointer ${statusConfig[task.status].color}`}
-                      >
-                        <option value="todo">Todo</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="in-review">In Review</option>
-                        <option value="blocked">Blocked</option>
-                        <option value="done">Done</option>
-                      </select>
-                      
-                      {/* Delete Button */}
-                      <button
-                        onClick={(e) => handleDeleteTask(task.id, e)}
-                        className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 opacity-0 group-hover:opacity-100 transition"
-                        title="Delete task"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mt-3">
-                    {task.assignee && (
-                      <span className="flex items-center gap-1">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs">
-                          {task.assignee[0]}
+                  <summary className="cursor-pointer list-none p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 pr-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="text-gray-800 font-semibold">{task.name}</h4>
+                          {task.generated_by_ai && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                              <Sparkles className="w-3 h-3" />
+                              AI
+                            </span>
+                          )}
                         </div>
-                        {task.assignee}
+                        <p className="text-gray-600 text-sm line-clamp-2">{task.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Status Dropdown */}
+                        <select
+                          value={task.status}
+                          onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value as api.Task['status'], e as any)}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`px-3 py-1 rounded-full text-xs border cursor-pointer ${statusConfig[task.status].color}`}
+                        >
+                          <option value="todo">Todo</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="in-review">In Review</option>
+                          <option value="blocked">Blocked</option>
+                          <option value="done">Done</option>
+                        </select>
+                        
+                        {/* Delete Button */}
+                        <button
+                          onClick={(e) => handleDeleteTask(task.id, e)}
+                          className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 opacity-0 group-hover:opacity-100 transition"
+                          title="Delete task"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Quick Info */}
+                    <div className="flex items-center gap-4 text-xs text-gray-500 mt-3">
+                      {task.assignee && (
+                        <span className="flex items-center gap-1">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs">
+                            {task.assignee[0]}
+                          </div>
+                          {task.assignee}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {task.time_estimate}h est
                       </span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {task.time_estimate}h estimated
-                    </span>
-                    {task.actual_time && (
-                      <span className="text-green-600">
-                        {task.actual_time}h actual
+                      <span className={`px-2 py-0.5 rounded-full ${
+                        task.priority === 'high' ? 'bg-red-100 text-red-700' :
+                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}>
+                        {task.priority}
                       </span>
-                    )}
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      task.priority === 'high' ? 'bg-red-100 text-red-700' :
-                      task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {task.priority}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">
-                      Difficulty: {task.difficulty}/5
-                    </span>
+                      <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                        Difficulty: {task.difficulty}/5
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                        Quality: {task.quality_score}/5
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                        Autonomy: {task.autonomy}/4
+                      </span>
+                    </div>
+                  </summary>
+                  
+                  {/* Expanded Details */}
+                  <div className="px-4 pb-4 pt-2 border-t border-gray-100 mt-3 space-y-3">
+                    {/* Full Description */}
+                    <div>
+                      <h5 className="text-sm font-semibold text-gray-700 mb-1">📝 Description</h5>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{task.description}</p>
+                    </div>
+
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="text-xs text-blue-600 mb-1">Time Estimate</div>
+                        <div className="text-lg font-bold text-blue-700">{task.time_estimate}h</div>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                        <div className="text-xs text-green-600 mb-1">Actual Time</div>
+                        <div className="text-lg font-bold text-green-700">{task.actual_time || 0}h</div>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                        <div className="text-xs text-purple-600 mb-1">Quality Target</div>
+                        <div className="text-lg font-bold text-purple-700">{task.quality_score}/5</div>
+                      </div>
+                      <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                        <div className="text-xs text-orange-600 mb-1">Autonomy Level</div>
+                        <div className="text-lg font-bold text-orange-700">
+                          {task.autonomy === 1 ? 'A1-Guided' : 
+                           task.autonomy === 2 ? 'A2-Supervised' :
+                           task.autonomy === 3 ? 'A3-Independent' : 'A4-Autonomous'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Info */}
+                    <div className="flex items-center gap-6 text-xs text-gray-500">
+                      {task.due_date && (
+                        <span className="flex items-center gap-1">
+                          📅 Due: {new Date(task.due_date).toLocaleDateString()}
+                        </span>
+                      )}
+                      {task.started_at && (
+                        <span className="flex items-center gap-1">
+                          ▶️ Started: {new Date(task.started_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      {task.completed_at && (
+                        <span className="flex items-center gap-1 text-green-600">
+                          ✅ Completed: {new Date(task.completed_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </details>
               );
             })}
           </div>

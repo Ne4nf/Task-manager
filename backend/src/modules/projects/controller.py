@@ -3,6 +3,7 @@ Project controller (API endpoints)
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
+from src.core.session import get_current_user_from_session
 from src.modules.projects.schema import ProjectCreate, ProjectUpdate, ProjectResponse
 from src.modules.projects.service import ProjectService
 from src.modules.projects.deps import get_project_service
@@ -37,12 +38,14 @@ async def get_project(
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
     project: ProjectCreate,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    user_id: str = Depends(get_current_user_from_session)
 ):
-    """Create new project"""
-    # TODO: Get user_id from auth token
-    user_id = "00000000-0000-0000-0000-000000000000"
+    """
+    Create new project
     
+    User must be logged in. User ID is automatically retrieved from session cookie.
+    """
     created_project = await service.create_project(project, user_id)
     return created_project
 

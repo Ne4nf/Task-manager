@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Rocket, Lock, User } from 'lucide-react';
-import { createUser, getUserByEmail } from '../api/client';
+import { createUser, getUserByEmail, login } from '../api/client';
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -27,10 +27,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       // Create email from username
       const email = username.includes('@') ? username : `${username}@example.com`;
       
-      // Check if user exists
+      // Check if user exists, if not create one
       let user = await getUserByEmail(email);
-      
-      // If not, create new user
       if (!user) {
         user = await createUser({
           email: email,
@@ -38,10 +36,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         });
       }
 
+      // Login to get session
+      const loginResponse = await login({
+        email: email,
+        password: password  // Backend doesn't check password for now
+      });
+
       // Save user info to localStorage
-      localStorage.setItem('user_id', user.id);
-      localStorage.setItem('user_email', user.email);
-      localStorage.setItem('user_name', user.full_name);
+      localStorage.setItem('user_id', loginResponse.user_id);
+      localStorage.setItem('user_email', loginResponse.email);
+      localStorage.setItem('user_name', username);
 
       onLogin();
     } catch (err: any) {

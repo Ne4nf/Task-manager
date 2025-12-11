@@ -3,6 +3,7 @@ Document upload controller (API endpoints)
 """
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from typing import List
+from src.core.session import get_current_user_from_session
 from src.modules.document_upload.schema import DocumentUploadResponse, DocumentListResponse
 from src.modules.document_upload.service import DocumentService
 from src.modules.document_upload.deps import get_document_service
@@ -16,9 +17,14 @@ settings = get_settings()
 async def upload_document(
     project_id: str,
     file: UploadFile = File(...),
-    service: DocumentService = Depends(get_document_service)
+    service: DocumentService = Depends(get_document_service),
+    user_id: str = Depends(get_current_user_from_session)
 ):
-    """Upload a project document (.md, .docx, or .pdf)"""
+    """
+    Upload a project document (.md, .docx, or .pdf)
+    
+    Requires authentication - user_id automatically retrieved from session/header
+    """
     # Validate file extension
     if not any(file.filename.endswith(ext) for ext in settings.ALLOWED_FILE_TYPES):
         raise HTTPException(
@@ -35,10 +41,6 @@ async def upload_document(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File size exceeds maximum allowed size of {settings.MAX_FILE_SIZE / 1024 / 1024}MB"
         )
-    
-    # TODO: Get user_id from auth token
-    # Using test user from seed_database.py
-    user_id = "7c12df49-2694-4ab3-8016-1b9ffa4e417e"
     
     try:
         document = await service.upload_document(project_id, file.filename, content, user_id)

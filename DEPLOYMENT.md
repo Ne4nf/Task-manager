@@ -1,261 +1,258 @@
-# Deployment Checklist
+# 🚀 Deployment Checklist & Instructions
 
-## Pre-Deployment
+## ✅ Pre-Deployment Checklist
 
-### Backend Preparation
-- [x] Create `.env` file with production values
-- [x] Set `DEBUG=False` for production
-- [x] Add production frontend URL to `CORS_ORIGINS`
-- [x] Verify all environment variables in `.env.example`
-- [x] Test all API endpoints locally
-- [x] Create `render.yaml` for Render deployment
+### Backend (Render)
+- [x] `render.yaml` configured
+- [x] Environment variables documented in `.env.example`
+- [x] Python dependencies in `requirements.txt`
+- [x] `runtime.txt` specifies Python version
+- [x] FastAPI app configured for production
+- [x] CORS configured for frontend domain
+- [x] Database (Supabase) connected
+- [x] Claude API configured
 
-### Frontend Preparation
-- [x] Create `.env.local` with production API URL
-- [x] Test build locally: `npm run build`
-- [x] Verify all API calls use `VITE_API_URL`
-- [x] Create `vercel.json` for Vercel deployment
+### Frontend (Vercel)
+- [x] `vercel.json` configured
+- [x] Build command set to `npm run build`
+- [x] Output directory set to `dist`
+- [x] SPA routing configured
+- [x] Environment variable documented
+- [x] API URL configurable via `VITE_API_URL`
 
-### Database
-- [x] Run migrations in Supabase
-- [x] Verify all tables created
-- [x] Test database triggers for auto-calculation
-- [ ] Backup database before deployment
+### Features Completed
+- [x] User authentication
+- [x] Project management
+- [x] Module generation (AI + Memory-based)
+- [x] Task management
+- [x] Document upload & Git analysis
+- [x] **NEW:** Reused badge with source module link
+- [x] Tag-based semantic search
+- [x] Auto-tagging system
 
-### Security
-- [ ] Never commit `.env` files
-- [ ] Use environment variables for all secrets
-- [ ] Verify `.gitignore` includes `.env`
-- [x] Use service keys only on backend
+---
 
-## Deployment Steps
+## 🎯 Deployment Steps
 
-### 1. Push to GitHub
+### 1️⃣ Deploy Backend to Render
 
-```bash
-git init
-git add .
-git commit -m "Initial commit - Rockship v1.0.0"
-git branch -M main
-git remote add origin https://github.com/yourusername/rockship.git
-git push -u origin main
-```
-
-### 2. Deploy Backend to Render
-
-1. Go to https://render.com
-2. Click "New +" → "Web Service"
-3. Connect your GitHub repository
-4. Configure:
-   - **Name**: rockship-backend
-   - **Region**: Choose closest to you
-   - **Branch**: main
-   - **Root Directory**: backend
-   - **Environment**: Python 3
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn src.main:app --host 0.0.0.0 --port $PORT`
-   - **Plan**: Free
-
-5. Add Environment Variables:
+**Option A: Automatic (Recommended)**
+1. Push code to GitHub:
+   ```bash
+   git add .
+   git commit -m "Ready for deployment"
+   git push origin main
    ```
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_KEY=your_anon_key
-   SUPABASE_SERVICE_KEY=your_service_key
-   ANTHROPIC_API_KEY=your_anthropic_key
+
+2. Go to [Render Dashboard](https://dashboard.render.com/)
+3. Click "New +" → "Web Service"
+4. Connect your GitHub repository
+5. Render will auto-detect `render.yaml` and configure everything
+
+**Option B: Manual**
+1. Create new Web Service on Render
+2. Configure:
+   - Name: `rockship-backend`
+   - Environment: `Python 3`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `uvicorn src.main:app --host 0.0.0.0 --port $PORT`
+   - Branch: `main`
+
+3. Add Environment Variables:
+   ```
+   SUPABASE_URL=<your_supabase_url>
+   SUPABASE_KEY=<your_supabase_anon_key>
+   SUPABASE_SERVICE_KEY=<your_service_key>
+   ANTHROPIC_API_KEY=<your_claude_api_key>
    CLAUDE_MODEL=claude-3-5-sonnet-20241022
    DEBUG=False
-   API_V1_PREFIX=/api/v1
-   MAX_FILE_SIZE=10485760
+   CORS_ORIGINS=["https://your-frontend.vercel.app"]
    ```
 
-6. **IMPORTANT**: After first deploy, get your backend URL (e.g., `https://rockship-backend.onrender.com`)
+4. Click "Create Web Service"
+5. Wait for deployment (5-10 minutes)
+6. Copy your backend URL: `https://rockship-backend.onrender.com`
 
-7. Update `CORS_ORIGINS` environment variable:
-   ```
-   CORS_ORIGINS=["https://your-frontend-url.vercel.app"]
-   ```
-   (Update this after deploying frontend)
+---
 
-8. Click "Create Web Service"
+### 2️⃣ Deploy Frontend to Vercel
 
-### 3. Deploy Frontend to Vercel
+**Option A: Vercel CLI (Fast)**
+```bash
+cd frontend
+npm install -g vercel  # If not installed
+vercel login
+vercel  # Follow prompts
+```
 
-1. Go to https://vercel.com
-2. Click "Add New..." → "Project"
+**Option B: Vercel Dashboard**
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Click "Add New" → "Project"
 3. Import your GitHub repository
-4. Configure:
-   - **Framework Preset**: Vite
-   - **Root Directory**: frontend
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-
-5. Add Environment Variables:
-   - **Name**: `VITE_API_URL`
-   - **Value**: `https://your-backend-url.onrender.com/api/v1`
-   (Use the URL from Render deployment)
-
+4. Vercel auto-detects Vite config
+5. Add Environment Variable:
+   ```
+   VITE_API_URL=https://rockship-backend.onrender.com/api/v1
+   ```
 6. Click "Deploy"
+7. Wait 2-3 minutes
+8. Your app is live at `https://your-app.vercel.app`
 
-7. After deployment, get your frontend URL (e.g., `https://rockship.vercel.app`)
+---
 
-### 4. Update CORS in Backend
+### 3️⃣ Post-Deployment Configuration
 
-1. Go back to Render dashboard
-2. Open your backend service
-3. Go to "Environment" tab
-4. Update `CORS_ORIGINS`:
+**Update Backend CORS:**
+1. Go to Render Dashboard → Your service → Environment
+2. Update `CORS_ORIGINS`:
    ```
-   CORS_ORIGINS=["https://rockship.vercel.app","https://your-custom-domain.com"]
+   ["https://your-app.vercel.app","https://your-app-*.vercel.app"]
    ```
-5. Save changes (this will trigger auto-redeploy)
+3. Save and redeploy
 
-### 5. Test Production
-
+**Test Deployment:**
 1. Visit your Vercel URL
-2. Test login (username + password: 123)
-3. Test creating project
-4. Test uploading document
-5. Test generating modules with AI
-6. Test generating tasks with AI
-7. Test updating task status
-8. Test deleting items
+2. Try login/register
+3. Create a project
+4. Generate modules with AI
+5. Test "Gen AI with Memories" feature
+6. Check reused badge shows correctly
+7. Click "View Source" button on reused modules
 
-## Post-Deployment
+---
 
-### Monitoring
-- [ ] Check Render logs for errors
-- [ ] Check Vercel deployment logs
-- [ ] Monitor Supabase usage
-- [ ] Monitor Anthropic API usage
+## 🔧 Environment Variables Reference
 
-### Custom Domain (Optional)
+### Backend (Render)
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `SUPABASE_URL` | ✅ | Supabase project URL | `https://xxx.supabase.co` |
+| `SUPABASE_KEY` | ✅ | Supabase anon key | `eyJhb...` |
+| `SUPABASE_SERVICE_KEY` | ✅ | Service role key | `eyJhb...` |
+| `ANTHROPIC_API_KEY` | ✅ | Claude API key | `sk-ant-...` |
+| `CLAUDE_MODEL` | ✅ | Model version | `claude-3-5-sonnet-20241022` |
+| `DEBUG` | ⚠️ | Debug mode | `False` (production) |
+| `CORS_ORIGINS` | ✅ | Allowed origins | `["https://your-app.vercel.app"]` |
 
-#### Frontend (Vercel)
-1. Go to Project Settings → Domains
-2. Add your custom domain
-3. Configure DNS records as instructed
-4. Wait for SSL certificate
+### Frontend (Vercel)
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `VITE_API_URL` | ✅ | Backend API URL | `https://your-backend.onrender.com/api/v1` |
 
-#### Backend (Render)
-1. Go to Service Settings → Custom Domains
-2. Add your custom domain
-3. Configure DNS records
-4. Wait for SSL certificate
+---
 
-### Performance Optimization
-- [ ] Enable Vercel Edge Network
-- [ ] Configure Render auto-scaling
-- [ ] Set up CDN for static assets
-- [ ] Enable response compression
-
-### Maintenance
-- [ ] Set up error monitoring (Sentry)
-- [ ] Configure backup schedule for database
-- [ ] Document API changes
-- [ ] Plan feature updates
-
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Backend Issues
 
-**500 Internal Server Error**
-- Check Render logs
-- Verify environment variables
-- Check Supabase connection
-- Verify ANTHROPIC_API_KEY
+**Problem: "Module not found" error**
+```bash
+# Solution: Check requirements.txt includes all dependencies
+pip freeze > requirements.txt
+git add requirements.txt
+git commit -m "Update dependencies"
+git push
+```
 
-**CORS Errors**
-- Update CORS_ORIGINS in Render
-- Include https:// in URLs
-- Check for trailing slashes
+**Problem: "Connection refused" to Supabase**
+- Check `SUPABASE_URL` is correct
+- Verify `SUPABASE_SERVICE_KEY` has proper permissions
+- Check Supabase project is active
 
-**Database Connection Failed**
-- Verify SUPABASE_URL and keys
-- Check Supabase project status
-- Test connection from Render logs
+**Problem: CORS errors**
+- Update `CORS_ORIGINS` to include your Vercel domain
+- Include wildcard for preview deployments: `https://*.vercel.app`
 
 ### Frontend Issues
 
-**API Connection Failed**
-- Verify VITE_API_URL in Vercel
-- Check backend is running
-- Test API endpoint directly
-- Check CORS settings
+**Problem: API calls failing**
+- Check `VITE_API_URL` points to correct backend
+- Verify backend is deployed and healthy
+- Check browser console for CORS errors
 
-**Build Failed**
-- Check Node.js version (18+)
-- Verify all dependencies in package.json
-- Test build locally first
-- Check build logs in Vercel
+**Problem: "Reused" badge not showing**
+- Module must have `reused_from_module_id` field
+- Backend needs to save this field when generating modules
+- Check network tab: Does API response include `reused_from_module_id`?
 
-**White Screen**
-- Check browser console for errors
-- Verify all routes configured
-- Test with browser cache cleared
-- Check vercel.json rewrites
-
-## Environment Variables Reference
-
-### Backend (.env)
-```env
-APP_NAME=Rockship Backend
-APP_VERSION=1.0.0
-DEBUG=False
-API_V1_PREFIX=/api/v1
-CORS_ORIGINS=["https://your-app.vercel.app"]
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_KEY=eyJxxx...
-SUPABASE_SERVICE_KEY=eyJxxx...
-ANTHROPIC_API_KEY=sk-ant-xxx...
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
-MAX_FILE_SIZE=10485760
+**Problem: Build fails**
+```bash
+# Solution: Clear cache and reinstall
+rm -rf node_modules package-lock.json
+npm install
+npm run build
 ```
 
-### Frontend (.env.local)
-```env
-VITE_API_URL=https://your-backend.onrender.com/api/v1
+---
+
+## 📊 Monitoring
+
+### Backend Health Check
+```bash
+curl https://your-backend.onrender.com/health
+# Expected: {"status": "healthy"}
 ```
 
-## Cost Estimation
+### Test Endpoints
+```bash
+# Login
+curl -X POST https://your-backend.onrender.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"test123"}'
 
-### Free Tier Limits
+# List projects
+curl https://your-backend.onrender.com/api/v1/projects/ \
+  -H "X-User-ID: your-user-id"
+```
 
-**Vercel (Frontend)**
-- Bandwidth: 100GB/month
-- Build time: 6000 minutes/year
-- Deployments: Unlimited
-- **Cost**: Free
+### Logs
+- **Render:** Dashboard → Your Service → Logs
+- **Vercel:** Dashboard → Your Project → Deployments → View Logs
 
-**Render (Backend)**
-- Hours: 750/month (sleeps after 15 min inactivity)
-- Memory: 512MB
-- **Cost**: Free
-- **Note**: Paid plan ($7/month) for always-on
+---
 
-**Supabase (Database)**
-- Database: 500MB
-- Storage: 1GB
-- Bandwidth: 2GB
-- **Cost**: Free
-- **Note**: Paid plan starts at $25/month
+## 🎉 Success Criteria
 
-**Anthropic (AI)**
-- Claude API usage charged per token
-- Estimate: $0.003 per 1K input tokens, $0.015 per 1K output tokens
-- **Cost**: Pay-as-you-go
+- ✅ Backend responds to health check
+- ✅ Frontend loads without errors
+- ✅ User can login/register
+- ✅ Projects can be created
+- ✅ Modules can be generated with AI
+- ✅ "Gen AI with Memories" workflow works
+- ✅ Reused badge shows with correct strategy
+- ✅ "View Source" button navigates to source module
+- ✅ No console errors in browser
+- ✅ API response times < 2 seconds
 
-### Estimated Monthly Cost
-- Free tier: $0 (with usage limits)
-- Basic production: ~$32/month ($7 Render + $25 Supabase + usage-based AI)
+---
 
-## Support
+## 📝 Post-Deployment TODO
 
-If you encounter issues:
-1. Check Render logs
-2. Check Vercel deployment logs
-3. Check browser console
-4. Verify all environment variables
-5. Test API endpoints with curl/Postman
-6. Review this checklist again
+1. **Custom Domain (Optional)**
+   - Vercel: Settings → Domains → Add
+   - Render: Settings → Custom Domain
 
-Good luck with deployment! 🚀
+2. **Analytics Setup**
+   - Add Google Analytics to frontend
+   - Set up error tracking (Sentry)
+
+3. **Performance Monitoring**
+   - Monitor API response times
+   - Track Claude API usage/costs
+
+4. **Database Backup**
+   - Set up Supabase backup schedule
+   - Export important data regularly
+
+---
+
+## 🆘 Support
+
+- Backend Issues: Check `backend/README.md`
+- Frontend Issues: Check `frontend/README.md`
+- GenAI Features: Check `backend/GENAI_MEMORIES_SIMPLE.md`
+
+**Need Help?**
+- Render Docs: https://render.com/docs
+- Vercel Docs: https://vercel.com/docs
+- Supabase Docs: https://supabase.com/docs
