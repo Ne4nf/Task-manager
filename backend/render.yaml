@@ -1,10 +1,11 @@
 services:
   - type: web
-    name: rockship-backend
+    name: task-manager-backend
     env: python
-    region: oregon
+    region: singapore
     plan: free
     branch: main
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -29,6 +30,6 @@ services:
       - key: CLAUDE_MODEL
         value: claude-3-5-sonnet-latest
       - key: CORS_ORIGINS
-        value: '["https://your-frontend-url.vercel.app"]'
+        value: '["https://task-manager-mijz.vercel.app"]'
       - key: MAX_FILE_SIZE
         value: 10485760
