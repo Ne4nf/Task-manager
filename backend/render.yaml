@@ -27,7 +27,7 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: CLAUDE_MODEL
-        value: claude-3-5-sonnet-20241022
+        value: claude-3-5-sonnet-latest
       - key: CORS_ORIGINS
         value: '["https://your-frontend-url.vercel.app"]'
       - key: MAX_FILE_SIZE
