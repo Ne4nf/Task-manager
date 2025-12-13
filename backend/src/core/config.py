@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     
     # Claude AI
     ANTHROPIC_API_KEY: str
-    CLAUDE_MODEL: str = "claude-3-5-sonnet-latest"
+    CLAUDE_MODEL: str = "claude-3-5-sonnet-20241022"
     
     # File Upload
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
