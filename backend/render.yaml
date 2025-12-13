@@ -30,6 +30,6 @@ services:
       - key: CLAUDE_MODEL
         value: claude-3-5-sonnet-latest
       - key: CORS_ORIGINS
-        value: '["https://task-manager-mijz.vercel.app"]'
+        value: '["https://task-manager-woad-three-57.vercel.app"]'
       - key: MAX_FILE_SIZE
         value: 10485760
