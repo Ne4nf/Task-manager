@@ -16,7 +16,22 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     
     # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS_ORIGINS string into list"""
+        import json
+        if isinstance(self.CORS_ORIGINS, str):
+            # Try parsing as JSON first (for deployment configs)
+            if self.CORS_ORIGINS.strip().startswith('['):
+                try:
+                    return json.loads(self.CORS_ORIGINS)
+                except json.JSONDecodeError:
+                    pass
+            # Fallback to comma-separated
+            return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        return self.CORS_ORIGINS
     
     # Supabase
     SUPABASE_URL: str
@@ -25,7 +40,7 @@ class Settings(BaseSettings):
     
     # Claude AI
     ANTHROPIC_API_KEY: str
-    CLAUDE_MODEL: str = "claude-3-5-sonnet-20241022"
+    CLAUDE_MODEL: str = "claude-3-5-sonnet-latest"
     
     # File Upload
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB

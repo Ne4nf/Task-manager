@@ -93,10 +93,17 @@ class GitAnalyzerService:
         
         # Build repomix command
         # Note: --remote flag clones repo, so output goes to cwd
-        # Use full path for npx on Windows
-        npx_cmd = "npx"
-        if os.name == 'nt':  # Windows
-            npx_cmd = r"C:\Program Files\nodejs\npx.cmd"
+        # On Windows, need to use shell=True or full path with .cmd extension
+        import platform
+        
+        if platform.system() == "Windows":
+            # On Windows, npx is a .cmd file, need shell=True to find it
+            npx_cmd = "npx"
+            use_shell = True
+        else:
+            # On Unix-like systems, npx is directly executable
+            npx_cmd = "npx"
+            use_shell = False
         
         cmd = [
             npx_cmd,
@@ -110,6 +117,7 @@ class GitAnalyzerService:
             # Run repomix from temp directory
             print(f"[DEBUG] Running repomix in: {self.temp_dir}")
             print(f"[DEBUG] Command: {' '.join(cmd[:4])}...")  # Don't log token
+            print(f"[DEBUG] Using shell: {use_shell}")
             
             result = subprocess.run(
                 cmd,
@@ -118,7 +126,8 @@ class GitAnalyzerService:
                 timeout=300,  # 5 minutes
                 cwd=self.temp_dir,
                 encoding='utf-8',
-                errors='ignore'  # Ignore encoding errors
+                errors='ignore',  # Ignore encoding errors
+                shell=use_shell  # Use shell on Windows to find npx.cmd
             )
             
             print(f"[DEBUG] Repomix stdout: {result.stdout[:500] if result.stdout else 'None'}")
